@@ -4,12 +4,10 @@ import numpy as np
 import os
 import torch
 import torchvision
-import test_transforms as t
+from torchvision import transforms as t
 from matplotlib import pyplot as plt
 from PIL import Image
 
-# softmax layer for defect interpretation
-softmax = torch.nn.Softmax(dim=0)
 
 ##################################################
 img_path = 'Test_Images/'             # folder where images are
@@ -24,9 +22,10 @@ aux_loss = True                       # loss type model trained with
 ##################################################
 
 filelist = os.listdir(img_path)
-
 # print(filelist)
 
+# softmax layer for defect interpretation
+softmax = torch.nn.Softmax(dim=0)
 
 # this section loads in the weights of an already trained model
 model = torchvision.models.segmentation.__dict__[pre_model](num_classes=classes,
