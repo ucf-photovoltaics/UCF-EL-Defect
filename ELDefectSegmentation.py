@@ -1,3 +1,4 @@
+import cell_cropping
 import json
 import matplotlib
 import numpy as np
@@ -63,11 +64,23 @@ cmaplist = [(0.001462, 0.000466, 0.013866, 1.0),
 # create the new map
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list('Custom', cmaplist, len(cmaplist))
 
-
+i = 0
 # loops through every image in folder
-for i in range(len(filelist)):
+while i < len(filelist):
     # opens up and preps image, runs through model (RGB to benefit from pretrained model)
+    if os.path.isdir(img_path+filelist[i]):
+        i += 1
+        continue
     im = Image.open(img_path+filelist[i]).convert('RGB')
+    # meant to capture module images and crop them
+    if im.size[0] > 2000:
+        cell_cropping.CellCropComplete(img_path+filelist[i], i, NumCells_x=12, NumCells_y=6)
+        split = os.listdir(img_path + 'Cell_Images' + str(i) + '/')
+        split = ['Cell_Images' + str(i) + '/' + s for s in split]
+        filelist.extend(split)
+        i += 1
+        continue
+    print(filelist)
     img = trans(im).unsqueeze(0)
     output = model(img)['out']
 
@@ -121,4 +134,5 @@ for i in range(len(filelist)):
     # plt.savefig(save_path + str(i) + '.png') # comment back in to save figures
     plt.show()
     plt.clf()
+    i += 1
 
