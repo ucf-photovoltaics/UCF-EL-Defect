@@ -1,4 +1,5 @@
 import cell_cropping
+import cv2
 import json
 import matplotlib
 import numpy as np
@@ -74,13 +75,19 @@ while i < len(filelist):
     im = Image.open(img_path+filelist[i]).convert('RGB')
     # meant to capture module images and crop them
     if im.size[0] > 2000:
-        cell_cropping.CellCropComplete(img_path+filelist[i], i, NumCells_x=12, NumCells_y=6)
+        # can switch to corners_get='manual' for manual cropping, in case of fail will automatically switch
+        try:
+            cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='auto')
+        except cv2.error:
+            print('This module needs manual corner finding. Click each of the four corners, then press \'c\'. '
+                  'In case of mistake, please press \'r\' to reset corners.')
+            cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='manual')
+
         split = os.listdir(img_path + 'Cell_Images' + str(i) + '/')
         split = ['Cell_Images' + str(i) + '/' + s for s in split]
         filelist.extend(split)
         i += 1
         continue
-    print(filelist)
     img = trans(im).unsqueeze(0)
     output = model(img)['out']
 
@@ -107,10 +114,12 @@ while i < len(filelist):
         crack_portion = torch.div(torch.count_nonzero(nodef == 1), total_pix)
         contact_portion = torch.div(torch.count_nonzero(nodef == 2), total_pix)
         interconnect_portion = torch.div(torch.count_nonzero(nodef == 3), total_pix)
+        corrosion_portion = torch.div(torch.count_nonzero(nodef == 4), total_pix)
 
         # creates json to save defect percentage per class category
         defect_percentages = {'crack': round(float(crack_portion), 7), 'contact': round(float(contact_portion), 7),
-                              'interconnect': round(float(interconnect_portion), 7)}
+                              'interconnect': round(float(interconnect_portion), 7),
+                              'corrosion': round(float(corrosion_portion), 7)}
 
         with open(defect_dir + name + '.json', 'w') as fp:
             json.dump(defect_percentages, fp)
