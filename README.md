@@ -1,4 +1,5 @@
-This is a script meant for easy use of our defect segmentation model, seen in our paper Automated Defect Detection and Localization in Photovoltaic Cells using Semantic Segmentation of Electroluminescence Images. Our models are trained and evaluated using the PyTorch python package. 
+# Semantic Segmentation of Photovoltaic Cells
+This is a script meant for easy use of our defect segmentation model, seen in our paper [Automated Defect Detection and Localization in Photovoltaic Cells using Semantic Segmentation of Electroluminescence Images](https://ieeexplore.ieee.org/document/9650542). Our models are trained and evaluated using the PyTorch python package. 
 
 The images of the dataset are all individual cell images found in the 'images/' folder, and the .csv containing annotations are found in 'annotations.csv'. These are exported straight from the annotation software, then combined from different annotation sessions. The 'test_images.csv' and 'train_images.csv' contain the filenames of our train-test split evaluated in the paper. This will be updated to a cleaner split method (separate folders) soon. 
 
