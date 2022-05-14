@@ -19,7 +19,8 @@ model_path = 'models/'                # folder where model is stored
 model_name = 'model_97.pth'           # trained model name
 save_path = 'visuals/'                # location to save figures
 defect_dir = 'defect_percentages/'    # location to save defect percentage jsons
-defect_per = False                    # turn on if you want to see defect percentages
+defect_per = True                    # turn on if you want to see defect percentages
+use_gpu = torch.cuda.is_available()   # determines if GPU can be used to speed up computation
 ##################################################
 ################ model parameters ################
 pre_model = 'deeplabv3_resnet50'      # backbone model was trained on
@@ -29,7 +30,10 @@ aux_loss = True                       # loss type model trained with
 ##################################################
 
 filelist = os.listdir(img_path)
-# print(filelist)
+if defect_per:
+    os.makedirs(defect_dir, exist_ok=True)
+if not os.path.exists(save_path):
+    os.makedirs(save_path, exist_ok=True)
 
 # softmax layer for defect interpretation
 softmax = torch.nn.Softmax(dim=0)
@@ -65,83 +69,102 @@ cmaplist = [(0.001462, 0.000466, 0.013866, 1.0),
 # create the new map
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list('Custom', cmaplist, len(cmaplist))
 
+if use_gpu:
+    model = model.cuda()
+
 i = 0
-# loops through every image in folder
-while i < len(filelist):
-    # opens up and preps image, runs through model (RGB to benefit from pretrained model)
-    if os.path.isdir(img_path+filelist[i]):
+
+with torch.no_grad():
+    # loops through every image in folder
+    while i < len(filelist):
+        # opens up and preps image, runs through model (RGB to benefit from pretrained model)
+        if os.path.isdir(img_path+filelist[i]):
+            i += 1
+            continue
+        im = Image.open(img_path+filelist[i]).convert('RGB')
+        # meant to capture module images and crop them
+        if im.size[0] > 2000:
+            # can switch to corners_get='manual' for manual cropping, in case of fail will automatically switch
+            try:
+                cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='auto')
+            except cv2.error:
+                print('This module needs manual corner finding. Click each of the four corners, then press \'c\'. '
+                      'In case of mistake, please press \'r\' to reset corners.')
+                cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='manual')
+
+            split = os.listdir(img_path + 'Cell_Images' + str(i) + '/')
+            split = ['Cell_Images' + str(i) + '/' + s for s in split]
+            filelist.extend(split)
+            i += 1
+            continue
+        img = trans(im).unsqueeze(0)
+        if use_gpu:
+            img = img.cuda()
+        output = model(img)['out']
+
+        # threshold to determine defect vs. non-defect instead of softmax (custom for this model)
+        soft = softmax(output[0])
+        nodef = soft[0]
+        nodef[nodef < threshold] = -1
+        nodef[nodef >= threshold] = 0
+        nodef = nodef.type(torch.int)
+        def_idx = soft[1:].argmax(0).type(torch.int)
+        def_idx = def_idx + 1
+        nodef[nodef == -1] = def_idx[nodef == -1]
+
+        if defect_per:
+            # name is for saving json with defect percentage
+            name = 'cell' + str(i)
+
+            # counts stats of pixels/defect percentages
+            output_pix = torch.count_nonzero(nodef)
+            total_pix = torch.numel(nodef.detach())
+
+            output_defect_percent = torch.div(output_pix.type(torch.float), total_pix)
+            if use_gpu:
+                output_defect_percent = output_defect_percent.cpu()
+
+            crack_portion = torch.div(torch.count_nonzero(nodef == 1), total_pix)
+            contact_portion = torch.div(torch.count_nonzero(nodef == 2), total_pix)
+            interconnect_portion = torch.div(torch.count_nonzero(nodef == 3), total_pix)
+            corrosion_portion = torch.div(torch.count_nonzero(nodef == 4), total_pix)
+
+            # creates json to save defect percentage per class category
+            defect_percentages = {'crack': round(float(crack_portion), 7), 'contact': round(float(contact_portion), 7),
+                                  'interconnect': round(float(interconnect_portion), 7),
+                                  'corrosion': round(float(corrosion_portion), 7)}
+
+            with open(defect_dir + name + '.json', 'w') as fp:
+                json.dump(defect_percentages, fp)
+
+        if use_gpu:
+            nodef = nodef.cpu()
+            img = img.cpu()
+
+        orig_img = (img * .2) + .5
+        nodef = np.ma.masked_where(nodef == 0, nodef)
+
+        # plots the original image next to prediction (with defect percentage)
+        plt.subplot(1, 2, 1)
+        plt.imshow(orig_img[0][0].numpy(), cmap='gray', vmin=0, vmax=1)
+        plt.axis('off')
+        plt.title('original image')
+        plt.subplot(1, 2, 2)
+        plt.imshow(orig_img[0][0], cmap='gray', vmin=0, vmax=1)
+        plt.imshow(nodef, cmap=cmap, vmin=0, vmax=4, alpha=.3)
+        plt.title('image + prediction')
+        plt.tick_params(axis='both', labelsize=0, length=0)
+        if defect_per:
+            plt.xlabel("Defect Percentage: " + str(output_defect_percent.numpy().round(5)))
+
+        plt.savefig(save_path + str(i) + '.png')  # comment back in to save figures
+        # plt.show()
+
+        plt.clf()
         i += 1
-        continue
-    im = Image.open(img_path+filelist[i]).convert('RGB')
-    # meant to capture module images and crop them
-    if im.size[0] > 2000:
-        # can switch to corners_get='manual' for manual cropping, in case of fail will automatically switch
-        try:
-            cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='auto')
-        except cv2.error:
-            print('This module needs manual corner finding. Click each of the four corners, then press \'c\'. '
-                  'In case of mistake, please press \'r\' to reset corners.')
-            cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='manual')
-
-        split = os.listdir(img_path + 'Cell_Images' + str(i) + '/')
-        split = ['Cell_Images' + str(i) + '/' + s for s in split]
-        filelist.extend(split)
-        i += 1
-        continue
-    img = trans(im).unsqueeze(0)
-    output = model(img)['out']
-
-    # threshold to determine defect vs. non-defect instead of softmax (custom for this model)
-    soft = softmax(output[0])
-    nodef = soft[0]
-    nodef[nodef < threshold] = -1
-    nodef[nodef >= threshold] = 0
-    nodef = nodef.type(torch.int)
-    def_idx = soft[1:].argmax(0).type(torch.int)
-    def_idx = def_idx + 1
-    nodef[nodef == -1] = def_idx[nodef == -1]
-
-    if defect_per:
-        # name is for saving json with defect percentage
-        name = 'cell' + str(i)
-
-        # counts stats of pixels/defect percentages
-        output_pix = torch.count_nonzero(nodef)
-        total_pix = torch.numel(nodef.detach())
-
-        output_defect_percent = torch.div(output_pix.type(torch.float), total_pix)
-
-        crack_portion = torch.div(torch.count_nonzero(nodef == 1), total_pix)
-        contact_portion = torch.div(torch.count_nonzero(nodef == 2), total_pix)
-        interconnect_portion = torch.div(torch.count_nonzero(nodef == 3), total_pix)
-        corrosion_portion = torch.div(torch.count_nonzero(nodef == 4), total_pix)
-
-        # creates json to save defect percentage per class category
-        defect_percentages = {'crack': round(float(crack_portion), 7), 'contact': round(float(contact_portion), 7),
-                              'interconnect': round(float(interconnect_portion), 7),
-                              'corrosion': round(float(corrosion_portion), 7)}
-
-        with open(defect_dir + name + '.json', 'w') as fp:
-            json.dump(defect_percentages, fp)
-
-    orig_img = (img * .2) + .5
-    nodef = np.ma.masked_where(nodef == 0, nodef)
-
-    # plots the original image next to prediction (with defect percentage)
-    plt.subplot(1, 2, 1)
-    plt.imshow(orig_img[0][0].numpy(), cmap='gray', vmin=0, vmax=1)
-    plt.axis('off')
-    plt.title('original image')
-    plt.subplot(1, 2, 2)
-    plt.imshow(orig_img[0][0], cmap='gray', vmin=0, vmax=1)
-    plt.imshow(nodef, cmap=cmap, vmin=0, vmax=4, alpha=.3)
-    plt.title('image + prediction')
-    plt.tick_params(axis='both', labelsize=0, length=0)
-    if defect_per:
-        plt.xlabel("Defect Percentage: " + str(output_defect_percent.numpy().round(5)))
-
-    # plt.savefig(save_path + str(i) + '.png') # comment back in to save figures
-    plt.show()
-    plt.clf()
-    i += 1
-
+        # clear up memory
+        if use_gpu:
+            del nodef
+            del img
+            if defect_per:
+                del output_defect_percent
