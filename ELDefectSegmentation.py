@@ -157,8 +157,8 @@ with torch.no_grad():
         if defect_per:
             plt.xlabel("Defect Percentage: " + str(output_defect_percent.numpy().round(5)))
 
-        plt.savefig(save_path + str(i) + '.png')  # comment back in to save figures
-        # plt.show()
+        # plt.savefig(save_path + str(i) + '.png')  # comment back in to save figures
+        plt.show()
 
         plt.clf()
         i += 1
