@@ -9,7 +9,7 @@ The data can be used separately from the code, but evaluation code is provided. 
 1. Place model path in the 'models/' folder and the images to test in the 'Test_Images/' directory.
 2. Rename all the paths and folder names appropriately at the top of ELDefectSegmentation.py (if necessary).
 3. Set model parameters according to the model used.
-4. Run ELDefectSegmentation.py. To save the output, uncomment line #143.
+4. Run ELDefectSegmentation.py. To save the output, uncomment line #160.
 
 This code requires the following python packages:
 - cv2
