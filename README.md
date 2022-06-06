@@ -7,7 +7,8 @@ The data can be used separately from the code, but evaluation code is provided. 
 
 Please do not hesitate to contact us with any feedback/questions. 
 
-# TO USE:
+## TO USE:
+*Skip to step 4 if using the repo as is. Everything is setup, it only needs to be modified for new trained models or images.* 
 1. Place model path in the 'models/' folder and the images to test in the 'Test_Images/' directory.
 2. Rename all the paths and folder names appropriately at the top of ELDefectSegmentation.py (if necessary).
 3. Set model parameters according to the model used.
