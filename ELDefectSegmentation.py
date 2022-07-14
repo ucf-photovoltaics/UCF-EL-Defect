@@ -14,11 +14,11 @@ from PIL import Image
 
 # editable parameters, set up to fit local file structure
 ##################################################
-img_path = 'Test_Images/'             # folder where images are
-model_path = 'models/'                # folder where model is stored
+img_path = 'Test_Images'             # folder where images are
+model_path = 'models'                # folder where model is stored
 model_name = 'model_97.pth'           # trained model name
-save_path = 'visuals/'                # location to save figures
-defect_dir = 'defect_percentages/'    # location to save defect percentage jsons
+save_path = 'visuals'                # location to save figures
+defect_dir = 'defect_percentages'    # location to save defect percentage jsons
 defect_per = True                    # turn on if you want to see defect percentages
 use_gpu = torch.cuda.is_available()   # determines if GPU can be used to speed up computation
 ##################################################
@@ -39,7 +39,7 @@ if not os.path.exists(save_path):
 softmax = torch.nn.Softmax(dim=0)
 
 # this section loads in the weights of an already trained model
-model = torchvision.models.segmentation.__dict__[pre_model](aux_loss=aux_loss)
+model = torchvision.models.segmentation.__dict__[pre_model](aux_loss=aux_loss, weights=None)
 
 # changes last layer for output of appropriate class number
 if pre_model == 'deeplabv3_resnet50' or pre_model == 'deeplabv3_resnet101':
@@ -51,7 +51,7 @@ else:
     model.classifier[4] = torch.nn.Conv2d(num_ftrs, num_classes, kernel_size=1)
 
 # model = model.cuda()
-checkpoint = torch.load(model_path+model_name, map_location='cpu')
+checkpoint = torch.load(os.path.join(model_path, model_name), map_location='cpu')
 model.load_state_dict(checkpoint['model'])
 model.eval()
 
@@ -85,14 +85,14 @@ with torch.no_grad():
         if im.size[0] > 2000:
             # can switch to corners_get='manual' for manual cropping, in case of fail will automatically switch
             try:
-                cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='auto')
+                cell_cropping.CellCropComplete(os.path.join(img_path, filelist[i]), i=i, NumCells_y=6, NumCells_x=12, corners_get='auto')
             except cv2.error:
                 print('This module needs manual corner finding. Click each of the four corners, then press \'c\'. '
                       'In case of mistake, please press \'r\' to reset corners.')
-                cell_cropping.CellCropComplete(img_path+filelist[i], i=i, NumCells_y=6, NumCells_x=12, corners_get='manual')
+                cell_cropping.CellCropComplete(os.path.join(img_path, filelist[i]), i=i, NumCells_y=6, NumCells_x=12, corners_get='manual')
 
-            split = os.listdir(img_path + 'Cell_Images' + str(i) + '/')
-            split = ['Cell_Images' + str(i) + '/' + s for s in split]
+            split = os.listdir(os.path.join(img_path, 'Cell_Images' + str(i)))
+            split = [os.path.join('Cell_Images' + str(i) + '/', s) for s in split]
             filelist.extend(split)
             i += 1
             continue
@@ -133,7 +133,7 @@ with torch.no_grad():
                                   'interconnect': round(float(interconnect_portion), 7),
                                   'corrosion': round(float(corrosion_portion), 7)}
 
-            with open(defect_dir + name + '.json', 'w') as fp:
+            with open(os.path.join(defect_dir, name + '.json'), 'w') as fp:
                 json.dump(defect_percentages, fp)
 
         if use_gpu:
@@ -156,7 +156,7 @@ with torch.no_grad():
         if defect_per:
             plt.xlabel("Defect Percentage: " + str(output_defect_percent.numpy().round(5)))
 
-        # plt.savefig(save_path + str(i) + '.png')  # comment back in to save figures
+        # plt.savefig(os.path.join(save_path, str(i) + '.png'))  # comment back in to save figures
         plt.show()
 
         plt.clf()
