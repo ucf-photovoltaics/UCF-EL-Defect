@@ -7,7 +7,7 @@ Created on Fri Jul 13 12:09:58 2018
 import skimage.filters as filters
 import numpy as np
 import cv2
-from pyhull import qconvex
+# from pyhull import qconvex
 from operator import attrgetter
 from scipy import stats as st
 
@@ -545,7 +545,8 @@ def CellCropping(img, NumCells_x=10, NumCells_y=6, border_width=200):
     maskpoints = np.column_stack(np.nonzero(mask))
 
     # Performing the convex hull and merging facets with less than 0.5% change in slope
-    vertices = qconvex('A0.99995 PM50 i', maskpoints)
+    # vertices = qconvex('A0.99995 PM50 i', maskpoints)
+    verticies = 0
     vertarray = np.zeros((len(vertices), 2), dtype=int)
     for i in range(len(vertices) - 1):
         vertarray[i + 1] = list(map(int, vertices[i + 1].split(' ')))[:2]
