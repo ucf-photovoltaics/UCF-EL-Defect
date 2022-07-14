@@ -14,18 +14,12 @@ Please do not hesitate to contact us with any feedback/questions.
 3. Set model parameters according to the model used.
 4. Run ELDefectSegmentation.py. To save the output, uncomment line #160.
 
-This code requires the following python packages:
-- cv2
-- json
-- matplotlib
-- numpy
-- operator
-- os
-- scipy
-- skimage
-- torch
-- torchvision
-- PIL
+This code requires the python packages listed in requirements.txt:
+To install (in environment of choice): 
+```
+pip install -r requirements.txt
+```
+
 
 Note:
 - To save defect percentages and display them in plots, set defect_per (line #21) to True
