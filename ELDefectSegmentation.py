@@ -39,8 +39,7 @@ if not os.path.exists(save_path):
 softmax = torch.nn.Softmax(dim=0)
 
 # this section loads in the weights of an already trained model
-model = torchvision.models.segmentation.__dict__[pre_model](aux_loss=aux_loss,
-                                                            pretrained=True)
+model = torchvision.models.segmentation.__dict__[pre_model](aux_loss=aux_loss)
 
 # changes last layer for output of appropriate class number
 if pre_model == 'deeplabv3_resnet50' or pre_model == 'deeplabv3_resnet101':
