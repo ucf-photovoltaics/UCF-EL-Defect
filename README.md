@@ -5,7 +5,10 @@ The images of the dataset are all individual cell images found in the 'Test_Imag
 
 The data can be used separately from the code, but evaluation code is provided. Brief instructions for use are found below. It can be used on our images, or any cell images to test for accuracy with our specific method. NOTE: The given model was trained for specific defects (cracks, contact defects, interconnect issues, and corrosion) on the module types included in our dataset. 
 
-# TO USE:
+Please do not hesitate to contact us with any feedback/questions. 
+
+## TO USE:
+*Skip to step 4 if using the repo as is. Everything is setup, it only needs to be modified for new trained models or images.* 
 1. Place model path in the 'models/' folder and the images to test in the 'Test_Images/' directory.
 2. Rename all the paths and folder names appropriately at the top of ELDefectSegmentation.py (if necessary).
 3. Set model parameters according to the model used.
