@@ -546,7 +546,7 @@ def CellCropping(img, NumCells_x=10, NumCells_y=6, border_width=200):
 
     # Performing the convex hull and merging facets with less than 0.5% change in slope
     # vertices = qconvex('A0.99995 PM50 i', maskpoints)
-    verticies = 0
+    vertices = 0
     vertarray = np.zeros((len(vertices), 2), dtype=int)
     for i in range(len(vertices) - 1):
         vertarray[i + 1] = list(map(int, vertices[i + 1].split(' ')))[:2]
