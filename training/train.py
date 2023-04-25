@@ -208,7 +208,7 @@ def main(args):
     device = torch.device(args.device)
 
     dataset = dataloader.DefectClassificationDataset(transform=get_transform(train=True), set="train")
-    dataset_val = dataloader.DefectClassificationDataset(transform=get_transform(train=False), set="val")
+    dataset_val = dataloader.DefectClassificationDataset(transform=get_transform(train=False), set="test")
     dataset_test = dataloader.DefectClassificationDataset(transform=get_transform(train=False), set="test")
 
     if args.distributed:
