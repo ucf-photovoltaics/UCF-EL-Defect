@@ -77,10 +77,10 @@ with torch.no_grad():
     # loops through every image in folder
     while i < len(filelist):
         # opens up and preps image, runs through model (RGB to benefit from pretrained model)
-        if os.path.isdir(img_path+filelist[i]):
+        if os.path.isdir(os.path.join(img_path, filelist[i])):
             i += 1
             continue
-        im = Image.open(img_path+filelist[i]).convert('RGB')
+        im = Image.open(os.path.join(img_path, filelist[i])).convert('RGB')
         # meant to capture module images and crop them
         if im.size[0] > 2000:
             # can switch to corners_get='manual' for manual cropping, in case of fail will automatically switch
